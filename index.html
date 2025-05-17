@@ -1,206 +1,614 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Page | Chat</title>
-  <style>
-    :root {
-      --bg: #f2f3f5;
-      --text: #1e1e1e;
-      --card: #fff;
-      --primary: #4b70f2;
-    }
-    body.dark {
-      --bg: #1e1e1e;
-      --text: #eee;
-      --card: #2c2c2c;
-    }
-
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    header {
-      background: var(--primary);
-      color: white;
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Page | Chat & Games</title>
+<style>
+  :root {
+    --bg: #f2f3f5;
+    --text: #1e1e1e;
+    --card: #fff;
+    --primary: #4b70f2;
+    --avatar-bg1: #6a8caf;
+    --avatar-bg2: #f28c8c;
+    --avatar-bg3: #f2c14e;
+    --avatar-bg4: #6af295;
+  }
+  body.dark {
+    --bg: #1e1e1e;
+    --text: #eee;
+    --card: #2c2c2c;
+  }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .dark-toggle, .clear-chat {
+    cursor: pointer;
+    user-select: none;
+    margin-left: 1rem;
+    font-weight: bold;
+  }
+  #tabs {
+    display: flex;
+    background: var(--card);
+  }
+  #tabs button {
+    flex: 1;
+    padding: 0.8rem;
+    border: none;
+    background: var(--card);
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--text);
+    border-bottom: 3px solid transparent;
+    transition: border-color 0.3s;
+  }
+  #tabs button.active {
+    border-bottom: 3px solid var(--primary);
+  }
+  #chatContainer, #gamesContainer {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #chatContainer.active, #gamesContainer.active {
+    display: flex;
+  }
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    scroll-behavior: smooth;
+  }
+  .msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--card);
+    padding: 10px;
+    border-radius: 10px;
+    position: relative;
+    max-width: 70%;
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+  .msg.self {
+    align-self: flex-end;
+    background: #d6e1ff;
+  }
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--avatar-bg1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    user-select: none;
+  }
+  .avatar.bg1 { background: var(--avatar-bg1); }
+  .avatar.bg2 { background: var(--avatar-bg2); }
+  .avatar.bg3 { background: var(--avatar-bg3); }
+  .avatar.bg4 { background: var(--avatar-bg4); }
+  .content {
+    flex: 1;
+    word-break: break-word;
+  }
+  .timestamp {
+    font-size: 0.7rem;
+    color: gray;
+    margin-top: 4px;
+  }
+  .reactions {
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .reactions span {
+    margin-right: 6px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: background 0.3s;
+  }
+  .reactions span.active {
+    background: var(--primary);
+    color: white;
+  }
+  .reactions span .count {
+    font-size: 0.8rem;
+    margin-left: 3px;
+  }
+  .read-receipt {
+    font-size: 0.7rem;
+    color: gray;
+    position: absolute;
+    bottom: -15px;
+    right: 10px;
+  }
+  .typing-indicator {
+    font-style: italic;
+    font-size: 0.85rem;
+    color: gray;
+    margin-left: 50px;
+  }
+  .online-users {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    user-select: none;
+  }
+  .user-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .user-dot.online {
+    background: #4caf50;
+  }
+  form {
+    display: flex;
+    gap: 10px;
+    padding: 1rem;
+    background: var(--bg);
+    border-top: 1px solid #ccc;
+  }
+  input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+  }
+  input[type="file"] {
+    display: none;
+  }
+  .image-preview {
+    max-width: 200px;
+    border-radius: 8px;
+    margin-top: 5px;
+  }
+  #scrollBottomBtn {
+    position: fixed;
+    bottom: 70px;
+    right: 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Games Container Styling */
+  #gamesContainer {
+    padding: 10px;
+    background: var(--card);
+    overflow: auto;
+  }
+  iframe.game-frame {
+    width: 100%;
+    height: 500px;
+    border: none;
+    border-radius: 8px;
+  }
+  @media (max-width: 600px) {
     .msg {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      background: var(--card);
-      padding: 10px;
-      border-radius: 10px;
-      position: relative;
-      max-width: 70%;
+      max-width: 90%;
     }
-
-    .msg.self {
-      align-self: flex-end;
-      background: #d6e1ff;
+    iframe.game-frame {
+      height: 300px;
     }
-
-    .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-    }
-
-    .content {
-      flex: 1;
-    }
-
-    .reactions {
-      font-size: 1.2rem;
-      margin-top: 0.5rem;
-      cursor: pointer;
-    }
-
-    .read-receipt {
-      font-size: 0.7rem;
-      color: gray;
-      position: absolute;
-      bottom: -15px;
-      right: 10px;
-    }
-
-    form {
-      display: flex;
-      gap: 10px;
-      padding: 1rem;
-      background: var(--bg);
-      border-top: 1px solid #ccc;
-    }
-
-    input[type="text"] {
-      flex: 1;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-    }
-
-    input[type="file"] {
-      display: none;
-    }
-
-    .dark-toggle {
-      cursor: pointer;
-    }
-
-    .image-preview {
-      max-width: 200px;
-      border-radius: 8px;
-      margin-top: 5px;
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <header>
-    <div><strong>Page</strong> Chat</div>
-    <div class="dark-toggle">🌓</div>
-  </header>
+<header>
+  <div><strong>Page</strong> Chat & Games</div>
+  <div>
+    <span class="dark-toggle" title="Toggle Dark Mode">🌓</span>
+    <span class="clear-chat" title="Clear Chat">🗑️</span>
+  </div>
+</header>
 
+<div id="tabs">
+  <button id="tabChat" class="active">Chat</button>
+  <button id="tabGames">Games</button>
+</div>
+
+<div id="chatContainer" class="active">
+  <div class="online-users" id="onlineUsers"></div>
   <div class="chat" id="chat"></div>
-
+  <div class="typing-indicator" id="typingIndicator" style="display:none;">Someone is typing...</div>
   <form id="form">
-    <label for="imgUpload">🖼️</label>
+    <label for="imgUpload" title="Upload image">🖼️</label>
     <input type="file" id="imgUpload" accept="image/*" />
     <input type="text" id="message" placeholder="Type a message..." autocomplete="off" />
     <button type="submit">Send</button>
   </form>
+</div>
 
-  <audio id="sendSound" src="data:audio/mp3;base64,//uQx... (short ping base64 audio) ..." preload="auto"></audio>
+<div id="gamesContainer">
+  <div>
+    <button data-game="tetris">Tetris</button>
+    <button data-game="snake">Snake</button>
+    <button data-game="pacman">Pac-Man</button>
+    <button data-game="spaceinvaders">Space Invaders</button>
+  </div>
+  <div id="gameFrameContainer" style="margin-top:10px;">
+    <!-- Iframes lazy loaded here -->
+  </div>
+</div>
 
-  <script>
-    const chat = document.getElementById('chat');
-    const form = document.getElementById('form');
-    const input = document.getElementById('message');
-    const imgUpload = document.getElementById('imgUpload');
-    const sendSound = document.getElementById('sendSound');
-    const darkToggle = document.querySelector('.dark-toggle');
+<audio id="sendSound" src="data:audio/mp3;base64,//uQx... (short ping base64 audio) ..." preload="auto"></audio>
 
-    const user = localStorage.getItem('username') || prompt("Enter your username:");
-    localStorage.setItem('username', user);
+<button id="scrollBottomBtn" title="Scroll to bottom">⬇️</button>
 
-    function createAvatar(name) {
-      const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-      return `<div class="avatar">${initials}</div>`;
+<script>
+  const chat = document.getElementById('chat');
+  const form = document.getElementById('form');
+  const input = document.getElementById('message');
+  const imgUpload = document.getElementById('imgUpload');
+  const sendSound = document.getElementById('sendSound');
+  const darkToggle = document.querySelector('.dark-toggle');
+  const clearChatBtn = document.querySelector('.clear-chat');
+  const onlineUsersDiv = document.getElementById('onlineUsers');
+  const typingIndicator = document.getElementById('typingIndicator');
+  const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+
+  const tabChatBtn = document.getElementById('tabChat');
+  const tabGamesBtn = document.getElementById('tabGames');
+  const chatContainer = document.getElementById('chatContainer');
+  const gamesContainer = document.getElementById('gamesContainer');
+  const gameFrameContainer = document.getElementById('gameFrameContainer');
+
+  // Simulated users for group chat + presence
+  const mockUsers = [
+    { name: "Alice Johnson", online: true },
+    { name: "Bob Smith", online: false },
+    { name: "Charlie Lee", online: true },
+    { name: "Dana White", online: true }
+  ];
+
+  // Store username locally or prompt
+  let user = localStorage.getItem('username') || prompt("Enter your username:");
+  if (!user) user = 'Guest';
+  localStorage.setItem('username', user);
+
+  // Add current user to mock users online if not exists
+  if (!mockUsers.find(u => u.name === user)) {
+    mockUsers.push({ name: user, online: true });
+  }
+
+  // Utilities for avatar bg classes
+  const avatarBgClasses = ['bg1', 'bg2', 'bg3', 'bg4'];
+  function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return hash;
+  }
+  function getAvatarBg(name) {
+    const hash = Math.abs(hashCode(name));
+    return avatarBgClasses[hash % avatarBgClasses.length];
+  }
+
+  function createAvatar(name) {
+    const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+    const bgClass = getAvatarBg(name);
+    return `<div class="avatar ${bgClass}" title="${name}">${initials}</div>`;
+  }
+
+  // Format timestamp HH:MM:SS
+  function formatTime(date) {
+    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  }
+
+  // Store messages in localStorage for persistence (optional)
+  let messages = JSON.parse(localStorage.getItem('messages')) || [];
+
+  function saveMessages() {
+    localStorage.setItem('messages', JSON.stringify(messages));
+  }
+
+  // Render online users with presence dots
+  function renderOnlineUsers() {
+    const onlineUsers = mockUsers.filter(u => u.online);
+    onlineUsersDiv.innerHTML = `Online: ${onlineUsers.map(u =>
+      `<span class="user-dot online" title="${u.name}"></span>${u.name}`
+    ).join(', ')}`;
+  }
+
+  // Render all messages
+  function renderMessages() {
+    chat.innerHTML = '';
+    messages.forEach(msg => {
+      const msgDiv = createMessageElement(msg);
+      chat.appendChild(msgDiv);
+    });
+    scrollChatToBottom();
+  }
+
+  // Create message DOM element with editing and deleting
+  function createMessageElement({id, sender, text, imgData, timestamp, reactions}) {
+    const msg = document.createElement('div');
+    msg.className = 'msg';
+    if (sender === user) msg.classList.add('self');
+    msg.dataset.id = id;
+
+    // Reactions rendering with counts
+    function reactionsHTML() {
+      if (!reactions) return '';
+      const emojis = Object.entries(reactions);
+      return emojis.map(([emoji, count]) => 
+        `<span data-emoji="${emoji}" class="${count > 0 ? 'active' : ''}">${emoji}<span class="count">${count}</span></span>`
+      ).join(' ');
     }
 
-    function addMessage(text, imgData = null) {
-      const msg = document.createElement('div');
-      msg.className = 'msg self';
+    msg.innerHTML = `
+      ${createAvatar(sender)}
+      <div class="content">
+        <div class="message-text">${text ? escapeHTML(text) : ''}</div>
+        ${imgData ? `<img src="${imgData}" class="image-preview" alt="Image"/>` : ''}
+        <div class="reactions">${reactionsHTML()}</div>
+        <div class="timestamp" title="${new Date(timestamp).toLocaleString()}">${formatTime(new Date(timestamp))}</div>
+        ${sender === user ? '<button class="edit-msg" title="Edit message">✏️</button> <button class="del-msg" title="Delete message">🗑️</button>' : ''}
+      </div>
+    `;
 
-      msg.innerHTML = `
-        ${createAvatar(user)}
-        <div class="content">
-          <div>${text}</div>
-          ${imgData ? `<img src="${imgData}" class="image-preview"/>` : ''}
-          <div class="reactions">❤️ 😂 👍</div>
-          <div class="read-receipt">✓ Read</div>
-        </div>
-      `;
-
-      msg.querySelector('.reactions').addEventListener('click', (e) => {
-        if (e.target.textContent) e.target.classList.toggle('active');
+    // Reaction toggle handler
+    const reactionsDiv = msg.querySelector('.reactions');
+    reactionsDiv.querySelectorAll('span').forEach(span => {
+      span.addEventListener('click', () => {
+        const emoji = span.dataset.emoji;
+        if (!reactions[emoji]) reactions[emoji] = 0;
+        if (span.classList.contains('active')) {
+          reactions[emoji]--;
+          span.classList.remove('active');
+        } else {
+          reactions[emoji]++;
+          span.classList.add('active');
+        }
+        span.querySelector('.count').textContent = reactions[emoji];
+        saveMessages();
       });
+    });
 
-      chat.appendChild(msg);
-      chat.scrollTop = chat.scrollHeight;
-
-      sendSound.play();
+    // Edit and Delete buttons only for own messages
+    if (sender === user) {
+      const editBtn = msg.querySelector('.edit-msg');
+      const delBtn = msg.querySelector('.del-msg');
+      editBtn.addEventListener('click', () => startEditMessage(id));
+      delBtn.addEventListener('click', () => deleteMessage(id));
     }
 
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (!text && !imgUpload.files.length) return;
+    return msg;
+  }
 
-      const reader = new FileReader();
-      reader.onload = function () {
-        const imgData = imgUpload.files.length ? reader.result : null;
-        addMessage(text, imgData);
-        input.value = '';
-        imgUpload.value = '';
-      };
+  // Escape HTML for safety
+  function escapeHTML(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
-      if (imgUpload.files.length) {
-        reader.readAsDataURL(imgUpload.files[0]);
-      } else {
-        addMessage(text);
+  // Add message to storage and UI
+  function addMessage(text, imgData = null, sender = user) {
+    const newMsg = {
+      id: Date.now() + Math.random(),
+      sender,
+      text,
+      imgData,
+      timestamp: Date.now(),
+      reactions: {}
+    };
+    messages.push(newMsg);
+    saveMessages();
+
+    const msgDiv = createMessageElement(newMsg);
+    chat.appendChild(msgDiv);
+    scrollChatToBottom();
+    sendSound.play();
+  }
+
+  // Edit message UI
+  function startEditMessage(id) {
+    const msgDiv = chat.querySelector(`.msg[data-id="${id}"]`);
+    const contentDiv = msgDiv.querySelector('.content');
+    const messageTextDiv = contentDiv.querySelector('.message-text');
+    const oldText = messageTextDiv.textContent;
+
+    // Replace with input
+    const inputEdit = document.createElement('input');
+    inputEdit.type = 'text';
+    inputEdit.value = oldText;
+    inputEdit.style.width = '100%';
+
+    contentDiv.insertBefore(inputEdit, messageTextDiv);
+    contentDiv.removeChild(messageTextDiv);
+
+    inputEdit.focus();
+
+    // Save or cancel edit
+    inputEdit.addEventListener('blur', () => finishEditMessage(id, inputEdit.value));
+    inputEdit.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        inputEdit.blur();
+      } else if (e.key === 'Escape') {
+        cancelEditMessage(id);
       }
     });
+  }
+  function finishEditMessage(id, newText) {
+    newText = newText.trim();
+    if (!newText) return cancelEditMessage(id);
 
-    darkToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-    });
-  </script>
+    const msg = messages.find(m => m.id == id);
+    if (msg) {
+      msg.text = newText;
+      saveMessages();
+      renderMessages();
+    }
+  }
+  function cancelEditMessage(id) {
+    renderMessages();
+  }
+  function deleteMessage(id) {
+    messages = messages.filter(m => m.id != id);
+    saveMessages();
+    renderMessages();
+  }
+
+  // Scroll chat to bottom helper
+  function scrollChatToBottom() {
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // Show scroll to bottom button if user scrolls up
+  chat.addEventListener('scroll', () => {
+    const nearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 50;
+    scrollBottomBtn.style.display = nearBottom ? 'none' : 'flex';
+  });
+  scrollBottomBtn.addEventListener('click', scrollChatToBottom);
+
+  // Typing indicator logic (mock)
+  let typingTimeout;
+  input.addEventListener('input', () => {
+    showTypingIndicator();
+    if (typingTimeout) clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      hideTypingIndicator();
+    }, 1500);
+  });
+  function showTypingIndicator() {
+    typingIndicator.style.display = 'block';
+  }
+  function hideTypingIndicator() {
+    typingIndicator.style.display = 'none';
+  }
+
+  // Handle form submit
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text && !imgUpload.files.length) return;
+
+    const reader = new FileReader();
+    reader.onload = function () {
+      const imgData = imgUpload.files.length ? reader.result : null;
+      addMessage(text, imgData);
+      input.value = '';
+      imgUpload.value = '';
+      hideTypingIndicator();
+    };
+
+    if (imgUpload.files.length) {
+      reader.readAsDataURL(imgUpload.files[0]);
+    } else {
+      addMessage(text);
+      input.value = '';
+      hideTypingIndicator();
+    }
+  });
+
+  // Dark mode toggle and remember preference
+  function loadDarkMode() {
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.body.classList.add('dark');
+    }
+  }
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+  }
+  darkToggle.addEventListener('click', toggleDarkMode);
+  loadDarkMode();
+
+  // Clear chat button
+  clearChatBtn.addEventListener('click', () => {
+    if (confirm('Clear all chat messages?')) {
+      messages = [];
+      saveMessages();
+      renderMessages();
+    }
+  });
+
+  // Render online users on load
+  renderOnlineUsers();
+
+  // Initial render of messages
+  renderMessages();
+
+  // Tab switching
+  tabChatBtn.addEventListener('click', () => {
+    tabChatBtn.classList.add('active');
+    tabGamesBtn.classList.remove('active');
+    chatContainer.classList.add('active');
+    gamesContainer.classList.remove('active');
+  });
+  tabGamesBtn.addEventListener('click', () => {
+    tabGamesBtn.classList.add('active');
+    tabChatBtn.classList.remove('active');
+    gamesContainer.classList.add('active');
+    chatContainer.classList.remove('active');
+  });
+
+  // Games URLs (free hosted versions or public online ones)
+  const gamesURLs = {
+    tetris: "https://freetetris.org/game.php",
+    snake: "https://playsnake.org/",
+    pacman: "https://google.com/logos/2010/pacman10-i.html", // Google Doodle pacman
+    spaceinvaders: "https://www.retrogames.cz/play_027-NES.php?language=EN"
+  };
+
+  // Lazy load iframe for selected game
+  function loadGame(game) {
+    gameFrameContainer.innerHTML = `<iframe class="game-frame" src="${gamesURLs[game]}" allowfullscreen></iframe>`;
+  }
+
+  // Handle game buttons
+  gamesContainer.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => loadGame(btn.dataset.game));
+  });
+
+  // Load default game on first click on games tab
+  let firstGameLoad = false;
+  tabGamesBtn.addEventListener('click', () => {
+    if (!firstGameLoad) {
+      loadGame('tetris');
+      firstGameLoad = true;
+    }
+  });
+
+</script>
 </body>
 </html>
