@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini Forum</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      padding: 10px;
+      max-width: 600px;
+      margin: auto;
+    }
+    #forum, #login-form, #register-form { display: none; margin-top: 20px; }
+    .post {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      box-sizing: border-box;
+    }
+    button { cursor: pointer; }
+    @media (max-width: 600px) {
+      body { padding: 5px; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>MiniForum</h1>
+
+<div id="auth">
+  <button onclick="showRegister()">Register</button>
+  <button onclick="showLogin()">Login</button>
+</div>
+
+<div id="register-form">
+  <h3>Register</h3>
+  <input type="text" id="reg-username" placeholder="Username" />
+  <input type="password" id="reg-password" placeholder="Password" />
+  <button onclick="register()">Create Account</button>
+</div>
+
+<div id="login-form">
+  <h3>Login</h3>
+  <input type="text" id="login-username" placeholder="Username" />
+  <input type="password" id="login-password" placeholder="Password" />
+  <label><input type="checkbox" id="rememberMe" /> Remember Username</label>
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="forum">
+  <h3>Welcome, <span id="userDisplay"></span>!</h3>
+  <button onclick="logout()" style="background: #f44336; color: white; border: none;">Logout</button>
+  <textarea id="message" rows="4" placeholder="Write your message..."></textarea>
+  <button onclick="postMessage()">Post</button>
+  <h4>Forum Posts:</h4>
+  <div id="posts"></div>
+</div>
+
+<script>
+  let currentUser = null;
+
+  function showRegister() {
+    document.getElementById('register-form').style.display = 'block';
+    document.getElementById('login-form').style.display = 'none';
+  }
+
+  function showLogin() {
+    document.getElementById('login-form').style.display = 'block';
+    document.getElementById('register-form').style.display = 'none';
+
+    const savedUser = localStorage.getItem('saved-username');
+    if (savedUser) {
+      document.getElementById('login-username').value = savedUser;
+      document.getElementById('rememberMe').checked = true;
+    }
+  }
+
+  function register() {
+    const username = document.getElementById('reg-username').value;
+    const password = document.getElementById('reg-password').value;
+
+    if (!username || !password) return alert("Please fill in both fields.");
+    if (localStorage.getItem(`user-${username}`)) return alert("Username already exists.");
+
+    localStorage.setItem(`user-${username}`, password);
+    alert("Registered! Please log in.");
+    showLogin();
+  }
+
+  function login() {
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    const remember = document.getElementById('rememberMe').checked;
+
+    const storedPassword = localStorage.getItem(`user-${username}`);
+    if (storedPassword === password) {
+      if (remember) {
+        localStorage.setItem('saved-username', username);
+      } else {
+        localStorage.removeItem('saved-username');
+      }
+
+      currentUser = username;
+      document.getElementById('auth').style.display = 'none';
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('forum').style.display = 'block';
+      document.getElementById('userDisplay').innerText = currentUser;
+      loadPosts();
+    } else {
+      alert("Invalid login credentials.");
+    }
+  }
+
+  function logout() {
+    currentUser = null;
+    document.getElementById('forum').style.display = 'none';
+    document.getElementById('auth').style.display = 'block';
+    showLogin();
+  }
+
+  function postMessage() {
+    const text = document.getElementById('message').value;
+    if (!text) return;
+
+    const post = {
+      user: currentUser,
+      text: text,
+      timestamp: new Date().toLocaleString()
+    };
+    const posts = JSON.parse(localStorage.getItem('forum-posts') || '[]');
+    posts.push(post);
+    localStorage.setItem('forum-posts', JSON.stringify(posts));
+    document.getElementById('message').value = '';
+    loadPosts();
+  }
+
+  function loadPosts() {
+    const posts = JSON.parse(localStorage.getItem('forum-posts') || '[]');
+    const container = document.getElementById('posts');
+    container.innerHTML = '';
+    posts.forEach(post => {
+      const div = document.createElement('div');
+      div.className = 'post';
+      div.innerHTML = `<strong>${post.user}</strong> <em>${post.timestamp}</em><br>${post.text}`;
+      container.appendChild(div);
+    });
+  }
+
+  window.onload = function () {
+    const savedUser = localStorage.getItem('saved-username');
+    if (savedUser) {
+      document.getElementById('login-username').value = savedUser;
+      document.getElementById('rememberMe').checked = true;
+    }
+  };
+</script>
+
+</body>
+</html>
