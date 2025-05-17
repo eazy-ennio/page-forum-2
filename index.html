@@ -1,169 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mini Forum</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page | Modern Forum</title>
   <style>
+    :root {
+      --bg: #f5f5f5;
+      --text: #222;
+      --card: #fff;
+      --primary: #5c67f2;
+    }
+    body.dark {
+      --bg: #121212;
+      --text: #f1f1f1;
+      --card: #1e1e1e;
+    }
     body {
-      font-family: sans-serif;
-      margin: 20px;
-      padding: 10px;
-      max-width: 600px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      max-width: 700px;
       margin: auto;
     }
-    #forum, #login-form, #register-form { display: none; margin-top: 20px; }
-    .post {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      background: #f9f9f9;
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .auth, .forum, .post-card {
+      background: var(--card);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     input, textarea, button {
       width: 100%;
       padding: 10px;
       margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
       box-sizing: border-box;
     }
-    button { cursor: pointer; }
-    @media (max-width: 600px) {
-      body { padding: 5px; }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .post-card {
+      display: flex;
+      gap: 10px;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      flex-shrink: 0;
+    }
+    .content img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   </style>
 </head>
 <body>
+<div class="container">
+  <div class="top-bar">
+    <h1>Page</h1>
+    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+  </div>
 
-<h1>MiniForum</h1>
+  <div class="auth" id="auth">
+    <h3>Register / Login</h3>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="loginOrRegister()">Continue</button>
+  </div>
 
-<div id="auth">
-  <button onclick="showRegister()">Register</button>
-  <button onclick="showLogin()">Login</button>
+  <div class="forum" id="forum" style="display:none">
+    <div class="top-bar">
+      <span>Welcome, <b id="userDisplay"></b></span>
+      <button onclick="logout()">Logout</button>
+    </div>
+    <textarea id="message" placeholder="Write something..."></textarea>
+    <input type="file" id="imageUpload" accept="image/*">
+    <button onclick="postMessage()">Post</button>
+    <div id="posts"></div>
+  </div>
 </div>
 
-<div id="register-form">
-  <h3>Register</h3>
-  <input type="text" id="reg-username" placeholder="Username" />
-  <input type="password" id="reg-password" placeholder="Password" />
-  <button onclick="register()">Create Account</button>
-</div>
-
-<div id="login-form">
-  <h3>Login</h3>
-  <input type="text" id="login-username" placeholder="Username" />
-  <input type="password" id="login-password" placeholder="Password" />
-  <label><input type="checkbox" id="rememberMe" /> Remember Username</label>
-  <button onclick="login()">Login</button>
-</div>
-
-<div id="forum">
-  <h3>Welcome, <span id="userDisplay"></span>!</h3>
-  <button onclick="logout()" style="background: #f44336; color: white; border: none;">Logout</button>
-  <textarea id="message" rows="4" placeholder="Write your message..."></textarea>
-  <button onclick="postMessage()">Post</button>
-  <h4>Forum Posts:</h4>
-  <div id="posts"></div>
-</div>
+<audio id="ping" src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA..." preload="auto"></audio>
 
 <script>
   let currentUser = null;
 
-  function showRegister() {
-    document.getElementById('register-form').style.display = 'block';
-    document.getElementById('login-form').style.display = 'none';
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark');
   }
 
-  function showLogin() {
-    document.getElementById('login-form').style.display = 'block';
-    document.getElementById('register-form').style.display = 'none';
+  function loginOrRegister() {
+    const user = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value;
+    if (!user || !pass) return alert("Fill all fields");
 
-    const savedUser = localStorage.getItem('saved-username');
-    if (savedUser) {
-      document.getElementById('login-username').value = savedUser;
-      document.getElementById('rememberMe').checked = true;
+    const existing = localStorage.getItem(`user-${user}`);
+    if (!existing) {
+      localStorage.setItem(`user-${user}`, pass);
+    } else if (existing !== pass) {
+      return alert("Wrong password");
     }
-  }
 
-  function register() {
-    const username = document.getElementById('reg-username').value;
-    const password = document.getElementById('reg-password').value;
-
-    if (!username || !password) return alert("Please fill in both fields.");
-    if (localStorage.getItem(`user-${username}`)) return alert("Username already exists.");
-
-    localStorage.setItem(`user-${username}`, password);
-    alert("Registered! Please log in.");
-    showLogin();
-  }
-
-  function login() {
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
-    const remember = document.getElementById('rememberMe').checked;
-
-    const storedPassword = localStorage.getItem(`user-${username}`);
-    if (storedPassword === password) {
-      if (remember) {
-        localStorage.setItem('saved-username', username);
-      } else {
-        localStorage.removeItem('saved-username');
-      }
-
-      currentUser = username;
-      document.getElementById('auth').style.display = 'none';
-      document.getElementById('login-form').style.display = 'none';
-      document.getElementById('register-form').style.display = 'none';
-      document.getElementById('forum').style.display = 'block';
-      document.getElementById('userDisplay').innerText = currentUser;
-      loadPosts();
-    } else {
-      alert("Invalid login credentials.");
-    }
+    currentUser = user;
+    document.getElementById('auth').style.display = 'none';
+    document.getElementById('forum').style.display = 'block';
+    document.getElementById('userDisplay').textContent = user;
+    loadPosts();
   }
 
   function logout() {
     currentUser = null;
-    document.getElementById('forum').style.display = 'none';
     document.getElementById('auth').style.display = 'block';
-    showLogin();
+    document.getElementById('forum').style.display = 'none';
   }
 
   function postMessage() {
-    const text = document.getElementById('message').value;
-    if (!text) return;
-
-    const post = {
-      user: currentUser,
-      text: text,
-      timestamp: new Date().toLocaleString()
-    };
+    const text = document.getElementById('message').value.trim();
+    const fileInput = document.getElementById('imageUpload');
+    const reader = new FileReader();
     const posts = JSON.parse(localStorage.getItem('forum-posts') || '[]');
-    posts.push(post);
-    localStorage.setItem('forum-posts', JSON.stringify(posts));
-    document.getElementById('message').value = '';
-    loadPosts();
+    const timestamp = new Date().toLocaleString();
+
+    function savePost(imageData = null) {
+      posts.push({ user: currentUser, text, image: imageData, time: timestamp });
+      localStorage.setItem('forum-posts', JSON.stringify(posts));
+      document.getElementById('message').value = '';
+      fileInput.value = '';
+      document.getElementById('ping').play();
+      loadPosts();
+    }
+
+    if (fileInput.files[0]) {
+      reader.onload = () => savePost(reader.result);
+      reader.readAsDataURL(fileInput.files[0]);
+    } else {
+      savePost();
+    }
   }
 
   function loadPosts() {
     const posts = JSON.parse(localStorage.getItem('forum-posts') || '[]');
     const container = document.getElementById('posts');
     container.innerHTML = '';
+
     posts.forEach(post => {
-      const div = document.createElement('div');
-      div.className = 'post';
-      div.innerHTML = `<strong>${post.user}</strong> <em>${post.timestamp}</em><br>${post.text}`;
-      container.appendChild(div);
+      const card = document.createElement('div');
+      card.className = 'post-card';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.style.background = stringToColor(post.user);
+      avatar.textContent = post.user.slice(0, 2).toUpperCase();
+
+      const content = document.createElement('div');
+      content.className = 'content';
+      content.innerHTML = `<strong>${post.user}</strong> <small>${post.time}</small><br>${post.text}`;
+
+      if (post.image) {
+        const img = document.createElement('img');
+        img.src = post.image;
+        content.appendChild(img);
+      }
+
+      card.appendChild(avatar);
+      card.appendChild(content);
+      container.appendChild(card);
     });
   }
 
-  window.onload = function () {
-    const savedUser = localStorage.getItem('saved-username');
-    if (savedUser) {
-      document.getElementById('login-username').value = savedUser;
-      document.getElementById('rememberMe').checked = true;
+  function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-  };
+    const color = `hsl(${hash % 360}, 60%, 60%)`;
+    return color;
+  }
 </script>
-
 </body>
 </html>
